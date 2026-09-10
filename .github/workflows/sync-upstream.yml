@@ -2,8 +2,8 @@ name: Sync Fork with Upstream
 
 on:
   schedule:
-    # Esegue il sync ogni 6 ore
-    - cron: '0 */6 * * *'
+    # Esegue il sync una volta al giorno alle 04:00 UTC
+    - cron: '0 7 * * *'
   workflow_dispatch: # Permette di avviare il sync a mano quando vuoi
 
 jobs:
@@ -14,7 +14,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Sincronizzazione con il repository principale
+        id: sync_step
         run: |
-          gh repo sync ManRa25/EsPrx -b main
+          OUTPUT=$(gh repo sync ManRa25/EsPrx -b main 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -qi "already up to date"; then
+            echo "updated=false" >> $GITHUB_OUTPUT
+            echo "Nessun aggiornamento trovato: il fork è già allineato."
+          else
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "Nuovi aggiornamenti trovati e sincronizzati!"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Riavvia e aggiorna Hugging Face Space
+        if: steps.sync_step.outputs.updated == 'true'
+        run: |
+          curl -X POST "https://huggingface.co/api/spaces/ManRa/EsPrx/restart?factory_reboot=true" \
+               -H "Authorization: Bearer ${{ secrets.HF_TOKEN }}"
