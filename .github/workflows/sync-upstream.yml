@@ -1,0 +1,20 @@
+name: Sync Fork with Upstream
+
+on:
+  schedule:
+    # Esegue il sync ogni 6 ore
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Permette di avviare il sync a mano quando vuoi
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del fork
+        uses: actions/checkout@v4
+
+      - name: Sincronizzazione con il repository principale
+        run: |
+          gh repo sync ManRa25/EsPrx -b main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
