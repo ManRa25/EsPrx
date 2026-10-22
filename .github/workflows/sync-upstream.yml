@@ -9,23 +9,31 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout del fork
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Sincronizzazione con il repository principale
         id: sync_step
         run: |
+          set +e
           OUTPUT=$(gh repo sync ManRa25/EsPrx -b main 2>&1)
+          EXIT_CODE=$?
+          set -e
+          
           echo "$OUTPUT"
-          if echo "$OUTPUT" | grep -qi "already up to date"; then
+          
+          if [ $EXIT_CODE -eq 0 ] || echo "$OUTPUT" | grep -qiE "already up to date|is up to date"; then
             echo "updated=false" >> $GITHUB_OUTPUT
-            echo "Nessun aggiornamento trovato: il fork è già allineato."
+            echo "Nessun aggiornamento trovato o fork già allineato."
           else
             echo "updated=true" >> $GITHUB_OUTPUT
             echo "Nuovi aggiornamenti trovati e sincronizzati!"
           fi
         env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Riavvia e aggiorna Hugging Face Space
